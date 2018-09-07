@@ -1,0 +1,127 @@
+<form>
+  <label>Splunk Connect for Kakfa Metrics Monitoring Dashboard</label>
+  <description>This dashboard is used to to analysis for different metrics provided by the connect nodes in a connect cluster collected using JMX</description>
+  <fieldset submitButton="false">
+    <input type="text" token="index_to_use">
+      <label>Splunk Index to use</label>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Kafka Connect Errors</title>
+      <single>
+        <title>Logged errors by kafka connect</title>
+        <search>
+          <query>index=$index_to_use$ | spath metric_type | search metric_type="task-error-metric" "total-errors-logged" &gt; 0 OR "total-record-errors" &gt; 0 OR "total-record-failures" &gt; 0 OR "total-records-skipped" &gt; 0 OR "total-retries" &gt; 0 | stats count</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0xdc4e41"]</option>
+        <option name="rangeValues">[1]</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="useColors">1</option>
+      </single>
+    </panel>
+    <panel>
+      <title>Kafka Connect Errors by host</title>
+      <chart>
+        <title>Breakup of errors by connect hosts</title>
+        <search>
+          <query>index=$index_to_use$ | spath metric_type | search metric_type="task-error-metric" "total-errors-logged" &gt; 0 OR "total-record-errors" &gt; 0 OR "total-record-failures" &gt; 0 OR "total-records-skipped" &gt; 0 OR "total-retries" &gt; 0 | stats count by connect_host</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Error to look for by SinkTask</title>
+      <input type="dropdown" token="error_type" searchWhenChanged="false">
+        <label>Error type to analyze</label>
+        <choice value="total-errors-logged">total-errors-logged</choice>
+        <choice value="total-record-errors">total-record-errors</choice>
+        <choice value="total-record-failures">total-record-failures</choice>
+        <choice value="total-records-skipped">total-records-skipped</choice>
+        <choice value="total-retries">total-retries</choice>
+        <default>total-errors-logged</default>
+      </input>
+      <chart>
+        <title>Errors of the selected type broken up by task</title>
+        <search>
+          <query>index=$index_to_use$ | spath metric_type | search metric_type="task-error-metric" $error_type$ &gt; 0 | stats count by metric_group</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Error to look for by Kafka connect host</title>
+      <input type="dropdown" token="error_type2" searchWhenChanged="false">
+        <label>Error type to analyze</label>
+        <choice value="total-errors-logged">total-errors-logged</choice>
+        <choice value="total-record-errors">total-record-errors</choice>
+        <choice value="total-record-failures">total-record-failures</choice>
+        <choice value="total-records-skipped">total-records-skipped</choice>
+        <choice value="total-retries">total-retries</choice>
+        <default>total-errors-logged</default>
+      </input>
+      <chart>
+        <title>Errors of the selected type broken up by kafka connect host</title>
+        <search>
+          <query>index=$index_to_use$ | spath metric_type | search metric_type="task-error-metric" $error_type2$ &gt; 0 | stats count by connect_host</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Serach for values of any metric type</title>
+      <input type="dropdown" token="metric_type">
+        <label>metric_type</label>
+        <choice value="consumer-coordinator-metrics">consumer-coordinator-metrics</choice>
+        <choice value="consumer-fetch-manager-metrics">consumer-fetch-manager-metrics</choice>
+        <choice value="connector-task-metrics">connector-task-metrics</choice>
+        <choice value="sink-task-metrics">sink-task-metrics</choice>
+      </input>
+      <input type="text" token="consumer-coordinator-metrics-submetric">
+        <label>consumer-coordinator-metrics-submetric</label>
+      </input>
+      <input type="text" token="consumer-fetch-manager-metrics-submetric">
+        <label>consumer-fetch-manager-metrics-submetric</label>
+      </input>
+      <input type="text" token="connector-task-metrics-submetric">
+        <label>connector-task-metrics-submetric</label>
+      </input>
+      <input type="text" token="sink-task-metrics-submetric">
+        <label>sink-task-metrics-submetric</label>
+      </input>
+      <single>
+        <title>Values of the selected metric type</title>
+        <search>
+          <query>index=$index_to_use$ metric_type=$metric_type$ | eval serach_string=case(metric_type=consumer-coordinator-metrics, $consumer-coordinator-metrics-submetric$, metric_type=consumer-fetch-manager-metrics, $consumer-fetch-manager-metrics-submetric$, metric_type=connector-task-metrics, $connector-task-metrics-submetric$, metric_type=sink-task-metrics, $sink-task-metrics-submetric$) | search search_string</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="rangeColors">["0x53a051","0x0877a6","0xf8be34","0xf1813f","0xdc4e41"]</option>
+        <option name="refresh.display">progressbar</option>
+      </single>
+    </panel>
+  </row>
+</form>
+
